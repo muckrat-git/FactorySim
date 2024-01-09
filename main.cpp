@@ -13,6 +13,7 @@ World world;
 int main() {
     SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(700, 400, "game");
+    //SetTargetFPS(120);
     
     // Init world
     world = World(0);
