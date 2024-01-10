@@ -29,3 +29,13 @@ float Modf(float a, float n) {
 float RotaryDistance(float a, float b) {
     return abs(Modf(a - b + PI, PI * 2) - PI);
 }
+
+float RotaryLerp(float a, float b, float x) {
+    return atan2((1 - x) * sinf(a) + x * sinf(b), (1-x) * cosf(a) + x * cosf(b));
+}
+
+// Restricts the values available to 'count' amount
+float Quantize(float value, float count, float min, float max) {
+    float normal = Normalize(value, min, max);
+    return roundf(normal * count) * max / count + min;
+}

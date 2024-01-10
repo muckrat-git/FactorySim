@@ -1,8 +1,8 @@
 #include <raylib.h>
 #include <rlgl.h>
-#include "World/World.cpp"
+#include "World/Player.cpp"
 #include "MarchingSquares.cpp"
-#include "World/Tiles.cpp"
+#include "Tiles/Tile.cpp"
 
 #define TILESIZE 16
 
@@ -59,9 +59,10 @@ namespace Renderer {
     int shaderWindowRLoc;
     int shaderEdgeMaskLoc;
     int shaderTexmapLoc;
+    int shaderGasmapLoc;
 
-    // World pointer
-    World * world;
+    // Player pointer
+    Player * player;
     Texture2D stone, edgeMaskTex;
     RenderTexture2D textureMask;
 
@@ -75,10 +76,10 @@ namespace Renderer {
         textureMask = LoadRenderTexture(window.x, window.y);
     }
     
-    void Init(World * worldPtr, Shader nshader) {
+    void Init(Player * playerPtr, Shader nshader) {
         LoadTexmap();
 
-        world = worldPtr;
+        player = playerPtr;
         shader = nshader;
 
         shaderWorldLoc = GetShaderLocation(shader, "world");
@@ -87,8 +88,10 @@ namespace Renderer {
         shaderWindowRLoc = GetShaderLocation(shader, "windowRatio");
         shaderEdgeMaskLoc = GetShaderLocation(shader, "edgeMask");
         shaderTexmapLoc = GetShaderLocation(shader, "textureMap");
+        shaderGasmapLoc = GetShaderLocation(shader, "gasTextureMap");
 
         SetShaderValue(shader, GetShaderLocation(shader, "textureCount"), &tile_count, SHADER_UNIFORM_INT);
+        SetShaderValue(shader, GetShaderLocation(shader, "gasCount"), &gas_count, SHADER_UNIFORM_INT);
 
         UpdateWindow(true);
         stone = LoadTexture("resources/tiles/stone.png");
@@ -97,7 +100,7 @@ namespace Renderer {
 
     void RenderWorld() {
         // Calculate screen bounds
-        viewSize = world->player->zoom;
+        viewSize = player->zoom;
         scale = window.x / viewSize;
         float ratio = window.x / window.y;
 
@@ -109,12 +112,14 @@ namespace Renderer {
         {
             SetShaderValue(shader, shaderScaleLoc, &viewSize, SHADER_UNIFORM_FLOAT);
             SetShaderValue(shader, shaderWindowRLoc, &ratio, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(shader, shaderPlayerLoc, &world->player->position, SHADER_UNIFORM_VEC2);
-            SetShaderValueTexture(shader, shaderWorldLoc, world->getTexture());
+            SetShaderValue(shader, shaderPlayerLoc, &player->position, SHADER_UNIFORM_VEC2);
+            SetShaderValueTexture(shader, shaderWorldLoc, player->world->getTexture());
             SetShaderValueTexture(shader, shaderEdgeMaskLoc, edgeMaskTex);
             SetShaderValueTexture(shader, shaderTexmapLoc, textureMap);
+            SetShaderValueTexture(shader, shaderGasmapLoc, gasMap);
 
-            DrawRectangle(0, 0, window.x, window.y, WHITE);
+            DrawRectangle(0, 0, window.x, window.y, BLANK);
+            DrawTextureFast(player->GetTexture(), {(window.x - scale) / 2, (window.y - scale) / 2, scale, scale}, WHITE);
         }
         EndShaderMode();
         DrawFPS(5, 5);

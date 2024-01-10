@@ -82,10 +82,30 @@ struct Vec2 {
         return Vec2<float>{(float)x, (float)y};
     }
 
+    Vec2<int> Int() {
+        return Vec2<int>{(int)x, (int)y};
+    }
+
+    Vec2<float> Round() {
+        return Vec2<float>{(float)round(x), (float)round(y)};
+    }
+
+    Vec2<int> iRound() {
+        return Round().Int();
+    }
+
+    Vec2<float> Floor() {
+        return Vec2<float>{(float)floor(x), (float)floor(y)};
+    }
+
     operator Vector2() {
         return (Vector2){(float)x, (float)y};
     }
 };
+
+Vec2<float> vec2(float x, float y) {
+    return Vec2<float>{x, y};
+}
 
 Vec2<float> fVec2FromStr(string s) {
     int count = 0;
