@@ -7,6 +7,7 @@
         "span": "cpp",
         "cmath": "cpp",
         "chrono": "cpp",
-        "variant": "cpp"
+        "variant": "cpp",
+        "iostream": "cpp"
     }
 }

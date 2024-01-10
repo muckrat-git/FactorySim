@@ -6,7 +6,7 @@
 
 #define TILESIZE 16
 
-void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint) {
+void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint, bool flipY = false) {
         float width = (float)tex1.width;
         float height = (float)tex1.height;
         
@@ -25,25 +25,24 @@ void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint) {
             rlNormal3f(0.0f, 0.0f, 1.0f);                          // Normal vector pointing towards viewer
 
             // Top-left corner for texture and quad
-            rlTexCoord2f(0, 0);
+            rlTexCoord2f(0, flipY ? 1 : 0);
             rlVertex2f(topLeft.x, topLeft.y);
 
             // Bottom-left corner for texture and quad
-            rlTexCoord2f(0, 1);
+            rlTexCoord2f(0, flipY ? 0 : 1);
             rlVertex2f(bottomLeft.x, bottomLeft.y);
 
             // Bottom-right corner for texture and quad
-            rlTexCoord2f(1, 1);
+            rlTexCoord2f(1, flipY ? 0 : 1);
             rlVertex2f(bottomRight.x, bottomRight.y);
 
             // Top-right corner for texture and quad
-            rlTexCoord2f(1, 0);
+            rlTexCoord2f(1, flipY ? 1 : 0);
             rlVertex2f(topRight.x, topRight.y);
 
         rlEnd();
         rlSetTexture(0);
 }
-
 
 namespace Renderer {
     float viewSize = 70;    // The size of the player viewport in tiles
@@ -64,7 +63,7 @@ namespace Renderer {
     // Player pointer
     Player * player;
     Texture2D stone, edgeMaskTex;
-    RenderTexture2D textureMask;
+    RenderTexture2D renderBuffer;
 
     void UpdateWindow(bool first = false) {
         // Get window bounds
@@ -72,8 +71,11 @@ namespace Renderer {
         window.y = GetRenderHeight();
 
         if(!first)
-            UnloadRenderTexture(textureMask);
-        textureMask = LoadRenderTexture(window.x, window.y);
+            UnloadRenderTexture(renderBuffer);
+        renderBuffer = LoadRenderTexture(window.x, window.y);
+
+        window.x = renderBuffer.texture.width;
+        window.y = renderBuffer.texture.height;
     }
     
     void Init(Player * playerPtr, Shader nshader) {
@@ -106,8 +108,7 @@ namespace Renderer {
 
         if(IsWindowResized()) UpdateWindow();
 
-        BeginDrawing();
-        ClearBackground(BLACK);
+        BeginTextureMode(renderBuffer);
         BeginShaderMode(shader);
         {
             SetShaderValue(shader, shaderScaleLoc, &viewSize, SHADER_UNIFORM_FLOAT);
@@ -122,6 +123,10 @@ namespace Renderer {
             DrawTextureFast(player->GetTexture(), {(window.x - scale) / 2, (window.y - scale) / 2, scale, scale}, WHITE);
         }
         EndShaderMode();
+        EndTextureMode();
+        
+        BeginDrawing();
+        DrawTextureFast(renderBuffer.texture, {0, 0, (float)GetRenderWidth(), (float)GetRenderHeight()}, WHITE, true);
         DrawFPS(5, 5);
         EndDrawing();
     }

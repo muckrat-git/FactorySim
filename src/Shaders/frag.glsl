@@ -26,23 +26,9 @@ uniform sampler2D player;
 // Output fragment color
 out vec4 finalColor;
 
-// Reflection of 'TileSprite' (in src/Tiles/Tile.cpp)
-struct tile {
-    int index;
-    int gas;
-    float alpha;
-};
-
-tile GetTile(vec2 pos) {
+vec3 GetTile(vec2 pos) {
     // Get world texture pixel
-    vec3 color = texture(world, pos / WORLDSIZE).rgb;
-
-    // Construct tile
-    return tile(
-        int(color.r * 255.0 + 0.5),
-        int(color.g * 255.0 + 0.5),
-        color.b
-    );
+    return texture(world, pos / WORLDSIZE).rgb * vec3(255, 255, 1);
 }
 
 // Returns the relative position of an empty neighbor tile from a marching square case ('c')
@@ -85,8 +71,8 @@ int MarchTile(vec2 pos) {
     );
 }
 
-vec2 MapVec(vec2 pix, int index, float size) {
-    return vec2((float(index) / size) + (mod(pix.x, 1) / size), mod(pix.y, 1));
+vec2 MapVec(vec2 pix, float index, float size) {
+    return vec2((index / size) + (mod(pix.x, 1) / size), mod(pix.y, 1));
 }
 
 float atan2(vec2 pos) {
@@ -104,10 +90,10 @@ vec3 GetLight(vec2 tilePos, vec2 lightPos) {
     // Distance from light to tile
     float d = 0;
 
-    while(solid(iLightPos + round(g * d)) == 0) {
-        if(iLightPos + round(g * d) == iTilePos) return vec3(1, 1, 1);
+    while(solid(iLightPos + round(g * d)) == 0 && iLightPos + round(g*d) != iTilePos) {
         d += 0.5;
     }
+    if(iLightPos + round(g * d) == iTilePos) return vec3(1, 1, 1);
 
     float lightFactor = length(d - distance(iLightPos, iTilePos)) - 1;
     lightFactor = clamp(lightFactor / 3.0, 0, 1);
@@ -124,7 +110,7 @@ void main() {
     tilePos += playerPos;
     
     // Extract tile-world data from world texture
-    tile worldData = GetTile(tilePos);
+    vec3 worldData = GetTile(tilePos);
 
     // Perform 'marching squares' calculation and get tile shape case
     int march = MarchTile(tilePos);
@@ -133,20 +119,20 @@ void main() {
     vec2 subpos = mod(tilePos, 1.0);
 
     // Ignore masking if tile is ground
-    if(worldData.index == 0) {
+    if(worldData.r == 0) {
         color = texture(textureMap, MapVec(subpos, 0, float(textureCount)));
         mask = vec4(0, 0, 0, 1);
     }
     else {
         // Get gas from closest empty tile
-        worldData.gas = int(texture(world, (tilePos + GetEmptyNeighbor(march)) / WORLDSIZE).g * 255.0 + 0.5);
+        worldData.gb = texture(world, (tilePos + GetEmptyNeighbor(march)) / WORLDSIZE).gb * vec2(255.0, 1.0);
 
         // Get pixel of ground texture for masking
         vec4 ground = texture(textureMap, MapVec(subpos, 0, float(textureCount)));
 
         // Get tile color
         mask = texture(edgeMask, MapVec(subpos, march, 16.0));
-        color = texture(textureMap, MapVec(subpos, worldData.index, float(textureCount))) * mask.ggga;
+        color = texture(textureMap, MapVec(subpos, worldData.r, float(textureCount))) * mask.ggga;
         color = mix(ground, color, mask.r);
     }
     
@@ -159,8 +145,8 @@ void main() {
     color = mix(color, vec4(midLayer.rgb, 1), (1-mask.r) * midLayer.a * fragColor.a);
     
     // Get and mix gas tint
-    vec4 gasTint = texture(gasTextureMap, vec2(float(worldData.gas) / gasCount, 1));
-    color = mix(color, vec4(gasTint.rgb, 1), (1-mask.r) * 0.15);
+    vec4 gasTint = texture(gasTextureMap, vec2(worldData.g / gasCount, 1));
+    color = mix(color, vec4(gasTint.rgb, 1), (1-mask.r) * 0.15 * worldData.b);
 
     finalColor = color;
 }

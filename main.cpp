@@ -12,9 +12,8 @@ using namespace std;
 World world;
 
 int main() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(700, 400, "game");
-    //SetTargetFPS(120);
     
     // Init world
     Player player;
