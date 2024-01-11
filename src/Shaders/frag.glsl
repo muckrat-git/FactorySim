@@ -54,6 +54,19 @@ vec2 GetEmptyNeighbor(int c) {
     return airNeighbor[c];
 }
 
+bool ApplyMarching(int index) {
+    const bool applyMarching[] = bool[](
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+    );
+    return applyMarching[index];
+}
+
 int solid(float x, float y) {
     return texture(world, vec2(x, y) / WORLDSIZE).x != 0.0 ? 1 : 0;
 }
@@ -72,7 +85,10 @@ int MarchTile(vec2 pos) {
 }
 
 vec2 MapVec(vec2 pix, float index, float size) {
-    return vec2((index / size) + (mod(pix.x, 1) / size), mod(pix.y, 1));
+    return vec2((index + mod(pix.x, 1)) / size, mod(pix.y, 1));
+}
+vec2 MapVec(vec2 pix, vec2 index, vec2 size) {
+    return (index + mod(pix, 1)) / size;
 }
 
 float atan2(vec2 pos) {
@@ -102,38 +118,34 @@ vec3 GetLight(vec2 tilePos, vec2 lightPos) {
 }
 
 void main() {
-    // Predefine temporary color buffer and mask color
-    vec4 color, mask;
+    // Convert screen position to relative tile position
+    vec2 tilePos = vec2(screenPosition.x - 0.5, (0.5 - screenPosition.y) / windowRatio) * scale;
 
-    // Convert screen position to world space tile position
-    vec2 tilePos = (vec2(screenPosition.x - 0.5, (0.5 - screenPosition.y) / windowRatio)) * scale;
+    // Calculate mod with seperate tile and player pos to avoid large floating point errors
+    vec2 subpos = mod(tilePos + mod(playerPos, 1), 1);
+
+    // Add player pos to get world-space tile position
     tilePos += playerPos;
     
     // Extract tile-world data from world texture
     vec3 worldData = GetTile(tilePos);
+    
+    // Get tile color
+    vec4 color = texture(textureMap, MapVec(subpos, worldData.r, textureCount));
 
-    // Perform 'marching squares' calculation and get tile shape case
-    int march = MarchTile(tilePos);
+    vec4 mask = vec4(0, 0, 0, 1);
 
-    // Calculate sub-position (remainder of position rounding) for texture coord
-    vec2 subpos = mod(tilePos, 1.0);
+    if(worldData.r != 0) {
+        // Get pixel of ground texture for masking
+        vec4 ground = texture(textureMap, MapVec(subpos, 0, textureCount));
 
-    // Ignore masking if tile is ground
-    if(worldData.r == 0) {
-        color = texture(textureMap, MapVec(subpos, 0, float(textureCount)));
-        mask = vec4(0, 0, 0, 1);
-    }
-    else {
+        // Apply a form of the 'marching squares' calculation and get tile shape case
+        int march = MarchTile(tilePos);
+        mask = texture(edgeMask, MapVec(subpos, vec2(march, !ApplyMarching(int(worldData.r + 0.5))), vec2(16, 2)));
+        color = mix(ground, color * mask.ggga, mask.r);
+
         // Get gas from closest empty tile
         worldData.gb = texture(world, (tilePos + GetEmptyNeighbor(march)) / WORLDSIZE).gb * vec2(255.0, 1.0);
-
-        // Get pixel of ground texture for masking
-        vec4 ground = texture(textureMap, MapVec(subpos, 0, float(textureCount)));
-
-        // Get tile color
-        mask = texture(edgeMask, MapVec(subpos, march, 16.0));
-        color = texture(textureMap, MapVec(subpos, worldData.r, float(textureCount))) * mask.ggga;
-        color = mix(ground, color, mask.r);
     }
     
     // Get and apply lighting

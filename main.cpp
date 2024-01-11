@@ -5,6 +5,7 @@
 
 #include "Other/Types.cpp"
 #include "Rendering/Renderer.cpp"
+#include "Rendering/GUI.cpp"
 #include "World/World.cpp"
 
 using namespace std;
@@ -21,16 +22,17 @@ int main() {
     player.world = &world;
     player.position = {WORLD_SIZE / 2, WORLD_SIZE / 2};
 
+    // Init renderer and gui
     Renderer::Init(&player, LoadShader("src/Shaders/vert.glsl", "src/Shaders/frag.glsl"));
-
-    for(int i = 0; i < 16; ++i) {
-        tileMasks[i] = LoadTexture(("resources/mask/case" + to_string(i) + ".png").c_str());
-    }
+    GUI::Load();
 
     while(!WindowShouldClose()) {
-        Renderer::RenderWorld();
+        // Render everything
+        Renderer::Render();
 
+        // Perform updates
         player.Update(GetFrameTime());
+        GUI::Update();
     }
 
     world.Unload();

@@ -6,6 +6,17 @@
 
 using namespace std;
 
+// GLSL style vector definition shorthands
+#define _vec22(x, y)  Vec2<float>{(float)x, (float)y}
+#define _vec21(xy)    Vec2<float>{(float)xy, (float)xy}
+#define _ivec22(x, y) Vec2<int>{(int)x, (int)y}
+#define _ivec21(xy)   Vec2<int>{(int)xy, (int)xy}
+
+// Provide macro overloading (https://stackoverflow.com/questions/11761703/overloading-macro-on-number-of-arguments)
+#define GET_VEC_MACRO(_1,_2,NAME,...) NAME
+#define vec2(...)   GET_VEC_MACRO(__VA_ARGS__, _vec22, _vec21)(__VA_ARGS__)
+#define ivec2(...)  GET_VEC_MACRO(__VA_ARGS__, _ivec22, _ivec21)(__VA_ARGS__)
+
 template<typename type>
 struct Vec2 {
     type x;
@@ -78,71 +89,33 @@ struct Vec2 {
         return to_string(x) + "," + to_string(y);
     }
 
+    // Convert any Vec2 to a floating point Vec2
     Vec2<float> Float() {
         return Vec2<float>{(float)x, (float)y};
     }
 
+    // Convert any Vec2 to an integer Vec2
     Vec2<int> Int() {
         return Vec2<int>{(int)x, (int)y};
     }
 
-    Vec2<float> Round() {
-        return Vec2<float>{(float)round(x), (float)round(y)};
+    // Rounds a Vec2 to the closest whole number
+    Vec2<type> Round() {
+        return Vec2<type>{round(x), round(y)};
     }
 
+    // Provides a rounded integer Vec2
     Vec2<int> iRound() {
         return Round().Int();
     }
 
-    Vec2<float> Floor() {
-        return Vec2<float>{(float)floor(x), (float)floor(y)};
+    // Provides a Vec2 rounded down to the nearest whole number
+    Vec2<type> Floor() {
+        return Vec2<type>{floor(x), floor(y)};
     }
 
+    // Raylib Vector2 type cast
     operator Vector2() {
         return (Vector2){(float)x, (float)y};
     }
 };
-
-Vec2<float> vec2(float x, float y) {
-    return Vec2<float>{x, y};
-}
-
-Vec2<float> fVec2FromStr(string s) {
-    int count = 0;
-    const char ** tokens = TextSplit(s.c_str(), ',', &count);
-    if(count != 2) return {0};
-    return Vec2<float>{
-        stof(tokens[0]),
-        stof(tokens[1])
-    };
-}
-
-Vec2<double> dVec2FromStr(string s) {
-    int count = 0;
-    const char ** tokens = TextSplit(s.c_str(), ',', &count);
-    if(count != 2) return {0};
-    return Vec2<double>{
-        stod(tokens[0]),
-        stod(tokens[1])
-    };
-}
-
-Vec2<long> lVec2FromStr(string s) {
-    int count = 0;
-    const char ** tokens = TextSplit(s.c_str(), ',', &count);
-    if(count != 2) return {0};
-    return Vec2<long>{
-        stol(tokens[0]),
-        stol(tokens[1])
-    };
-}
-
-Vec2<int> iVec2FromStr(string s) {
-    int count = 0;
-    const char ** tokens = TextSplit(s.c_str(), ',', &count);
-    if(count != 2) return {0};
-    return Vec2<int>{
-        stoi(tokens[0]),
-        stoi(tokens[1])
-    };
-}

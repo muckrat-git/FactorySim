@@ -74,8 +74,7 @@ struct SerializedTile {
         };
 
         // Load tileData
-        TileData tileData;
-        tileData.size = entries;
+        TileData tileData = TileData(entries);
         for(int i = 0; i < entries; ++i) {
             tileData.data[i].index = indices[i];
             tileData.data[i].value = ((float *)indices)[i];
@@ -83,6 +82,8 @@ struct SerializedTile {
 
         return {tileSprite, tileData};
     }
+
+    SerializedTile() {}
 
     SerializedTile(Tile tile) {
         // Load tileSprite

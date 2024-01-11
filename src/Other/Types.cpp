@@ -16,10 +16,17 @@ struct Pair {
     b second;
 };
 
+// Vec2 based rectangle structure
 template<typename x>
 struct Rect {
     Vec2<x> position;
     Vec2<x> size;
+};
+// Vec2 based rectangle with absolute coords (not size)
+template<typename x>
+struct AbsRect {
+    Vec2<x> a;
+    Vec2<x> b;
 };
 
 float Modf(float a, float n) {

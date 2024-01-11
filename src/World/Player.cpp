@@ -35,9 +35,8 @@ class Player {
         zoomVelocity = Lerp(zoomVelocity, 0, deltaT * 10);
         if(abs(zoomVelocity) < deltaT * 5) zoomVelocity = 0;
         
-        // Clamp zoom
-        if(zoom < 5) zoom = 5;
-        //if(zoom > 200) zoom = 200;
+        // Clamp zoom and round zoom to avoid rendering bugs
+        if(zoom < 10) zoom = 10;
 
         Vec2<float> newAxis;
         newAxis.x = IsKeyDown(KEY_D);

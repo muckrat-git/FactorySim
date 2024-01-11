@@ -59,14 +59,18 @@ class World {
 
     bool AreaIsAir(Vec2<float> pos, float area) {
         return 
-            isair((pos + Vec2<float>{area, -area}).Int()) && 
-            isair((pos + Vec2<float>{area, area}).Int()) && 
-            isair((pos + Vec2<float>{-area, -area}).Int()) && 
-            isair((pos + Vec2<float>{-area, area}).Int());
+            isair((pos + vec2(area, -area)).Int()) && 
+            isair((pos + vec2(area, area)).Int()) && 
+            isair((pos + vec2(-area, -area)).Int()) && 
+            isair((pos + vec2(-area, area)).Int());
     }
 
     void set(int x, int y, Tile value) {
         if(x < 0 || y < 0) return;
+        
+        // Delete previous content
+        tileContent[((y * WORLD_SIZE) + x)].Unload();
+
         tileSprites[((y * WORLD_SIZE) + x)] = value.sprite;
         tileContent[((y * WORLD_SIZE) + x)] = value.data;
     }

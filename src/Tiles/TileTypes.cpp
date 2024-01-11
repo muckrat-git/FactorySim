@@ -15,7 +15,9 @@ enum TileType {
     TILE_STONE,
     TILE_SILT,
     TILE_TITANIUM,
-    TILE_COPPER
+    TILE_COPPER,
+    TILE_DENSE_WALL,
+    TILE_GLASS
 };
 
 enum GasType {
@@ -26,6 +28,8 @@ enum GasType {
 
 const GasType defaultGasses[] = {
     GAS_EMPTY,
+    GAS_SOLID,
+    GAS_SOLID,
     GAS_SOLID,
     GAS_SOLID,
     GAS_SOLID,
@@ -53,6 +57,8 @@ void LoadTexmap() {
     images[tile_count++] = LoadImage("resources/tiles/silt.png");
     images[tile_count++] = LoadImage("resources/tiles/titanium.png");
     images[tile_count++] = LoadImage("resources/tiles/copper.png");
+    images[tile_count++] = LoadImage("resources/tiles/insulation.png");
+    images[tile_count++] = LoadImage("resources/tiles/glass.png");
 
     Image imgmap = GenImageColor(TILESIZE * tile_count, TILESIZE, WHITE);
     for(int i = 0; i < tile_count; ++i) {

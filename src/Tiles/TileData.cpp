@@ -18,7 +18,6 @@ class TileData {
 
     public:
     _Entry * data;  // Internal structure used for map style indexing 
-
     u8 size;        // Quantity of data entries
     
    

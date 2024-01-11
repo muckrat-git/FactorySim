@@ -1,7 +1,8 @@
+#pragma once
+
 #include <raylib.h>
 #include <rlgl.h>
 #include "World/Player.cpp"
-#include "MarchingSquares.cpp"
 #include "Tiles/Tile.cpp"
 
 #define TILESIZE 16
@@ -45,12 +46,14 @@ void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint, bool flipY = fa
 }
 
 namespace Renderer {
-    float viewSize = 70;    // The size of the player viewport in tiles
-    float scale;            // Camera-Tile scale (pixels per tile)
-    Vec2<float> window;
-    Rect<int> viewport;     // Tile space bounds
-    Vec2<int> windowOffset;
+    float viewSize = 70;        // The size of the player viewport in tiles
+    float scale;                // Camera-Tile scale (pixels per tile)
+    float ratio;                // Ratio of window.x to window.y
+    Vec2<float> window;         // Window width and height
+    Vec2<float> mouse;          // Mouse position
+    Vec2<int> mouseWorldPos;    // World space mouse position
 
+    // Shader and shader variable locations
     Shader shader;
     int shaderWorldLoc;
     int shaderScaleLoc;
@@ -62,7 +65,7 @@ namespace Renderer {
 
     // Player pointer
     Player * player;
-    Texture2D stone, edgeMaskTex;
+    Texture2D edgeMaskTex;
     RenderTexture2D renderBuffer;
 
     void UpdateWindow(bool first = false) {
@@ -96,15 +99,26 @@ namespace Renderer {
         SetShaderValue(shader, GetShaderLocation(shader, "gasCount"), &gas_count, SHADER_UNIFORM_INT);
 
         UpdateWindow(true);
-        stone = LoadTexture("resources/tiles/stone.png");
         edgeMaskTex = LoadTexture("resources/mask/case-sheet.png");
     }
 
-    void RenderWorld() {
+    // Prototype RenderGUI
+    void RenderGUI();
+
+    // Returns vec2 from -1 to 1 of the position relative to the window
+    Vec2<float> GetRelative(Vec2<float> position) {
+        return position * 2 / window - vec2(1);
+    }
+
+    void Render() {
         // Calculate screen bounds
         viewSize = player->zoom;
         scale = window.x / viewSize;
-        float ratio = window.x / window.y;
+        ratio = window.x / window.y;
+
+        // Update mouse pos
+        mouse.x = GetMouseX();
+        mouse.y = GetMouseY();
 
         if(IsWindowResized()) UpdateWindow();
 
@@ -123,6 +137,13 @@ namespace Renderer {
             DrawTextureFast(player->GetTexture(), {(window.x - scale) / 2, (window.y - scale) / 2, scale, scale}, WHITE);
         }
         EndShaderMode();
+
+        // Render user interface
+        RenderGUI();
+        
+        // Calculate world space mouse position
+        mouseWorldPos = ((GetRelative(mouse) * viewSize / vec2(2, ratio * 2)) + player->position).Int();
+
         EndTextureMode();
         
         BeginDrawing();
