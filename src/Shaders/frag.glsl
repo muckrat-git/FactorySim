@@ -104,7 +104,7 @@ vec3 GetLight(vec2 tilePos, vec2 lightPos) {
     // The x and y gradient 
     vec2 g = vec2(cos(r), sin(r));
     // Distance from light to tile
-    float d = 0;
+    float d = 0.5;
 
     while(solid(iLightPos + round(g * d)) == 0 && iLightPos + round(g*d) != iTilePos) {
         d += 0.5;

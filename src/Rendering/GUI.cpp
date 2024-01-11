@@ -15,20 +15,48 @@ namespace GUI {
         ACTION_TAB_STRUCTURE
     };
 
+    struct ActionTab {
+        Texture2D button;
+        Color highlight = BLANK;
+        bool (*update)();
+        void (*render)();
+    };
+
     const int actions = 5;              // The amount of tabs
-    Texture2D actionButtons[actions];   // Array of action tab buttons
+    ActionTab tabs[actions];            // Array of action tab buttons
     int activeTab = -1;                 // The index of the active tab (-1 means none)
     Color highlight;                    // The color of the mouse tile highlight
     AbsRect<int> absSelection;          // The coords of the player's selection (unordered)
     Rect<int> selection;                // The players rectangular selection (ordered)
+    Texture2D tabBackground;
+
+    // Rendering function for building tab
+    void _renderBuildTab() {
+
+    }
+    void _updateBuildTab() {}
 
     // Loads all GUI elements
     void Load() {
-        actionButtons[ACTION_TAB_BUILDING] = LoadTexture("resources/ui/building_tab.png");
-        actionButtons[ACTION_TAB_LOGIC] = LoadTexture("resources/ui/logic_tab.png");
-        actionButtons[ACTION_TAB_POWER] = LoadTexture("resources/ui/power_tab.png");
-        actionButtons[ACTION_TAB_TRANSPORTATION] = LoadTexture("resources/ui/transportation_tab.png");
-        actionButtons[ACTION_TAB_STRUCTURE] = LoadTexture("resources/ui/structure_tab.png");
+        tabBackground = LoadTexture("resources/ui/tab.png");
+
+        tabs[ACTION_TAB_BUILDING] = {
+            .button = LoadTexture("resources/ui/building_tab.png"),
+            .highlight = (Color){230, 230, 230, 70}
+        };
+        tabs[ACTION_TAB_LOGIC] = {
+            .button = LoadTexture("resources/ui/logic_tab.png")
+        };
+        tabs[ACTION_TAB_POWER] = {
+            .button = LoadTexture("resources/ui/power_tab.png")
+        };
+        tabs[ACTION_TAB_TRANSPORTATION] = {
+            .button = LoadTexture("resources/ui/transportation_tab.png")
+        };
+        tabs[ACTION_TAB_STRUCTURE] = {
+            .button = LoadTexture("resources/ui/structure_tab.png"),
+            .highlight = (Color){40, 80, 255, 90}
+        };
     }
 
     // Render all GUI elements
@@ -48,12 +76,12 @@ namespace GUI {
         );
 
         // Calculate absolute texture size
-        const float textureSize = ratio * (float)actionButtons[0].width;
+        const float textureSize = ratio * (float)tabs[0].button.width;
 
         // Get source rectangle for drawing
         const Rectangle source = {
             0, 0,
-            (float)actionButtons[0].width, (float)actionButtons[0].height
+            (float)tabs[0].button.width, (float)tabs[0].button.height
         };
         
         // Render all the buttons
@@ -71,7 +99,7 @@ namespace GUI {
             const u8 alpha = (CheckCollisionPointRec(GetMousePosition(), bounds) ? 230 : 180);
             const u8 shade = index == activeTab ? 255 : 200;
             
-            DrawTexturePro(actionButtons[index], source, bounds, {0, 0}, 0, (Color){shade, shade, shade, alpha});
+            DrawTexturePro(tabs[index].button, source, bounds, {0, 0}, 0, (Color){shade, shade, shade, alpha});
         }
 
         // Reset highlight color
@@ -80,22 +108,22 @@ namespace GUI {
         // Early return if no tab selected
         if(activeTab == -1) return;
 
-        // Render various action tabs
-        switch(activeTab) {
-            case ACTION_TAB_STRUCTURE:
-                highlight = (Color){40, 80, 255, 90};
-                break;
-            case ACTION_TAB_BUILDING:
-                highlight = (Color){230, 230, 230, 70};
-                break;
-            default:
-                break;
-        }
+        // Draw bg
+        DrawTextureFast(tabBackground, {window.x - ratio - (actions * textureSize * 1.2f), window.y - textureSize * 11, ((actions-1) * textureSize * 1.2f) + textureSize, textureSize * 9.5f}, WHITE);
+
+        // Render selected tab
+        if(tabs[activeTab].render != nullptr) tabs[activeTab].render();
+
+        // Set highlight color
+        highlight = tabs[activeTab].highlight;
     }
     
     void Update() {
+        // Update active tab (early return if tab chooses)
+        if(tabs[activeTab].render != nullptr && tabs[activeTab].update()) return;
+
         // Calculate absolute texture size
-        const float textureSize = ratio * (float)actionButtons[0].width;
+        const float textureSize = ratio * (float)tabs[0].button.width;
 
         // Right click action
         if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {

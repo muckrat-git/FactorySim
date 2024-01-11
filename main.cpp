@@ -13,7 +13,7 @@ using namespace std;
 World world;
 
 int main() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
     InitWindow(700, 400, "game");
     
     // Init world
