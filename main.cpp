@@ -13,7 +13,7 @@ using namespace std;
 World world;
 
 int main() {
-    SetConfigFlags(FLAG_WINDOW_RESIZABLE);
+    SetConfigFlags(FLAG_WINDOW_RESIZABLE | FLAG_VSYNC_HINT);
     InitWindow(700, 400, "game");
     
     // Init world
@@ -23,7 +23,7 @@ int main() {
     player.position = {WORLD_SIZE / 2, WORLD_SIZE / 2};
 
     // Init renderer and gui
-    Renderer::Init(&player, LoadShader("src/Shaders/vert.glsl", "src/Shaders/frag.glsl"));
+    Renderer::Init(&player, "src/Shaders/vert.glsl", "src/Shaders/frag.glsl");
     GUI::Load();
 
     while(!WindowShouldClose()) {
@@ -36,6 +36,7 @@ int main() {
     }
 
     world.Unload();
+    GUI::Unload();
 
     CloseWindow();
 }

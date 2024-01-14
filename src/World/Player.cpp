@@ -22,6 +22,8 @@ class Player {
     Vec2<float> movementAxis = {0, 0}; // Vector representing movement input
     Vec2<float> position = {0, 0};
 
+    int heldTile = -1;
+
     Texture2D texture;
 
     Player() {

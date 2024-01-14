@@ -81,11 +81,18 @@ namespace Renderer {
         window.y = renderBuffer.texture.height;
     }
     
-    void Init(Player * playerPtr, Shader nshader) {
+    void Init(Player * playerPtr, cstr vertex, cstr fragment) {
         LoadTexmap();
 
         player = playerPtr;
-        shader = nshader;
+        char * vertexShaderCode = LoadFileText(vertex);
+        char * baseFragCode = LoadFileText(fragment);
+        char * fragmentShaderCode = TextReplace(baseFragCode, "#tiledefs", genShaderFunctions().c_str());
+        cout << genShaderFunctions();
+        shader = LoadShaderFromMemory(vertexShaderCode, fragmentShaderCode);
+        free(vertexShaderCode);
+        free(fragmentShaderCode);
+        free(baseFragCode);
 
         shaderWorldLoc = GetShaderLocation(shader, "world");
         shaderScaleLoc = GetShaderLocation(shader, "scale");
@@ -95,8 +102,8 @@ namespace Renderer {
         shaderTexmapLoc = GetShaderLocation(shader, "textureMap");
         shaderGasmapLoc = GetShaderLocation(shader, "gasTextureMap");
 
-        SetShaderValue(shader, GetShaderLocation(shader, "textureCount"), &tile_count, SHADER_UNIFORM_INT);
-        SetShaderValue(shader, GetShaderLocation(shader, "gasCount"), &gas_count, SHADER_UNIFORM_INT);
+        SetShaderValue(shader, GetShaderLocation(shader, "textureCount"), &tileCount, SHADER_UNIFORM_INT);
+        SetShaderValue(shader, GetShaderLocation(shader, "gasCount"), &gasCount, SHADER_UNIFORM_INT);
 
         UpdateWindow(true);
         edgeMaskTex = LoadTexture("resources/mask/case-sheet.png");

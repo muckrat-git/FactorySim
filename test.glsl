@@ -24,7 +24,10 @@ uniform sampler2D gasTextureMap;
 uniform sampler2D player;
 
 // Input tile constants from CPU
-#tiledefs
+bool IsTransparent(int index) {bool lookup[] = new bool[7](false,true,true,true,true,true,true); return lookup[index];}
+bool IsSmoothable(int index) {bool lookup[] = new bool[7](false,true,true,true,true,false,false); return lookup[index];}
+bool IsSolid(int index) {bool lookup[] = new bool[7](false,true,true,true,true,true,true); return lookup[index];}
+
 
 // Output fragment color
 out vec4 finalColor;
@@ -57,13 +60,37 @@ vec2 GetEmptyNeighbor(int c) {
     return airNeighbor[c];
 }
 
+bool ApplyMarching(int index) {
+    const bool applyMarching[] = bool[](
+        false,
+        true,
+        true,
+        true,
+        true,
+        false,
+        false
+    );
+    return applyMarching[index];
+}
+
+bool transparent(vec2 pos) {
+    return IsTransparent(int(texture(world, pos / WORLDSIZE).x * 255 + 0.5));
+}
+
+int solid(float x, float y) {
+    return texture(world, vec2(x, y) / WORLDSIZE).x != 0.0 ? 1 : 0;
+}
+int solid(vec2 pos) {
+    return solid(pos.x, pos.y);
+}
+
 // NOTE: Add here your custom variables
 int MarchTile(vec2 pos) {
     return (
-        (int(solid(pos.x, pos.y - 1)) << 3) | 
-        (int(solid(pos.x + 1, pos.y)) << 2) | 
-        (int(solid(pos.x, pos.y + 1)) << 1) | 
-        (int(solid(pos.x - 1, pos.y)))
+        (solid(pos.x, pos.y - 1) << 3) | 
+        (solid(pos.x + 1, pos.y) << 2) | 
+        (solid(pos.x, pos.y + 1) << 1) | 
+        (solid(pos.x - 1, pos.y))
     );
 }
 
@@ -87,15 +114,15 @@ vec3 GetLight(vec2 tilePos, vec2 lightPos) {
     // The x and y gradient 
     vec2 g = vec2(cos(r), sin(r));
     // Distance from light to tile
-    float d = 0;
+    float d = 0.5;
 
     while(transparent(iLightPos + round(g * d)) && iLightPos + round(g*d) != iTilePos) {
-        d += 0.6;
+        d += 0.5;
     }
     if(iLightPos + round(g * d) == iTilePos) return vec3(1, 1, 1);
 
-    float lightFactor = length(d - distance(iLightPos, iTilePos));
-    lightFactor = clamp(lightFactor / 3, 0, 1);
+    float lightFactor = length(d - distance(iLightPos, iTilePos)) - 1;
+    lightFactor = clamp(lightFactor / 3.0, 0, 1);
 
     return vec3(1 - lightFactor);
 }
@@ -124,24 +151,13 @@ void main() {
 
         // Apply a form of the 'marching squares' calculation and get tile shape case
         int march = MarchTile(tilePos);
-        mask = texture(edgeMask, MapVec(subpos, march, 16.0));
-        color *= mix(mask.ggga, vec4(1, 1, 1, 1), 0.5);
-        mask.r *= color.a;
-        color = mix(ground, color, mask.r);
+        mask = texture(edgeMask, MapVec(subpos, vec2(march, !ApplyMarching(int(worldData.r + 0.5))), vec2(16, 2)));
+        color *= mask.ggga;
+        color = mix(ground, color, mask.r * color.a);
+        color.a = 1;
 
         // Get gas from closest empty tile
         worldData.gb = texture(world, (tilePos + GetEmptyNeighbor(march)) / WORLDSIZE).gb * vec2(255.0, 1.0);
-    }
-    else {
-        float a = 0;
-        int march = MarchTile(tilePos);
-        for(float angle = 0; angle < 3.1415*2; angle += 3.1415 / 4.0) {
-            vec2 n = vec2(sin(angle), cos(angle));
-            for(float d = 0; d < 0.5; d+=0.5/8.0) {
-                if(solid(tilePos - d*n)) a++;
-            }
-        }
-        color *= 1-(a/8.0/8.0);
     }
 
     // Apply middle layer texture
@@ -150,11 +166,11 @@ void main() {
     
     // Get and mix gas tint
     vec4 gasTint = texture(gasTextureMap, vec2(worldData.g / gasCount, 1));
-    color = mix(color, vec4(gasTint.rgb, 1), (1-mask.r) * 0.3 * worldData.b); 
+    color = mix(color, vec4(gasTint.rgb, 1), (1-mask.r) * 0.15 * worldData.b); 
     
     // Get and apply lighting
-    vec3 light = (GetLight(tilePos, playerPos) * 0.1 + 0.9);
+    vec3 light = (GetLight(tilePos, playerPos) * 0.5 + 0.5);
     color = color * vec4(light, 1);
 
-    finalColor = vec4(color.rgb, 1);
+    finalColor = color;
 }

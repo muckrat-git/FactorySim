@@ -56,7 +56,7 @@ Tile DefaultTile(TileType primary, GasType gas) {
 
 // Generates a full Tile from a basic tile types (default gas)
 Tile DefaultTile(TileType primary) {
-    return DefaultTile(primary, defaultGasses[primary]);
+    return DefaultTile(primary, getDefaultGas(primary));
 }
 
 struct SerializedTile {
@@ -77,7 +77,7 @@ struct SerializedTile {
         TileData tileData = TileData(entries);
         for(int i = 0; i < entries; ++i) {
             tileData.data[i].index = indices[i];
-            tileData.data[i].value = ((float *)indices)[i];
+            tileData.data[i].value = ((float *)values)[i];
         }
 
         return {tileSprite, tileData};
@@ -101,7 +101,7 @@ struct SerializedTile {
         // Transfer entries
         for(int i = 0; i < entries; ++i) {
             indices[i] = tile.data.data[i].index;
-            ((float *)indices)[i] = tile.data.data[i].value;
+            ((float *)values)[i] = tile.data.data[i].value;
         }
     }
 
