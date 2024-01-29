@@ -9,8 +9,8 @@ using namespace Renderer;
 namespace GUI {
     enum ACTION_TAB {
         ACTION_TAB_BUILDING,
-        ACTION_TAB_LOGIC,
-        ACTION_TAB_POWER,
+        ACTION_TAB_DIGGING,
+        ACTION_TAB_GAS,
         ACTION_TAB_TRANSPORTATION,
         ACTION_TAB_STRUCTURE
     };
@@ -62,7 +62,7 @@ namespace GUI {
                 color.a = 255;
             }
             else color.a = 200;
-            DrawTexturePro(textureMap, {(float)i * TILESIZE, 0, TILESIZE, TILESIZE}, rect, {0, 0}, 0, color);
+            DrawTexturePro(textureMap, {(float)i * TILESIZE, 0, TILESIZE, TILESIZE}, rect, {0}, 0, color);
         }
 
         if(player->heldTile != -1) {
@@ -74,10 +74,10 @@ namespace GUI {
                             textureMap, 
                             {(float)player->heldTile * TILESIZE, 0, TILESIZE, TILESIZE}, 
                             {
-                            (x - player->position.x) * scale + (window.x / 2), 
-                            (y - player->position.y) * scale + (window.y / 2), 
+                            (x - player->position.x + 0.5f) * scale + (window.x / 2), 
+                            (y - player->position.y + 0.5f) * scale + (window.y / 2), 
                             scale, scale
-                            }, {0, 0}, 0, (Color){200, 200, 200, 150}
+                            }, {scale / 2, scale / 2}, player->heldRotation * 90, (Color){200, 200, 200, 150}
                         );
                     }
                 }
@@ -88,10 +88,10 @@ namespace GUI {
                     textureMap, 
                     {(float)player->heldTile * TILESIZE, 0, TILESIZE, TILESIZE}, 
                     {
-                        (mouseWorldPos.x - player->position.x) * scale + (window.x / 2), 
-                        (mouseWorldPos.y - player->position.y) * scale + (window.y / 2), 
+                        (mouseWorldPos.x - player->position.x + 0.5f) * scale + (window.x / 2), 
+                        (mouseWorldPos.y - player->position.y + 0.5f) * scale + (window.y / 2), 
                         scale, scale
-                    }, {0, 0}, 0, (Color){200, 200, 200, 150}
+                    }, {scale / 2, scale / 2}, player->heldRotation * 90, (Color){200, 200, 200, 150}
                 );
             }
         }
@@ -100,8 +100,8 @@ namespace GUI {
 
         // Display tile name
         cstr name = tilePrefabs[tabs[activeTab].hover].name;
-        const int width = MeasureText(name, ratio * 16);
-        DrawText(name, tabBounds.x + tabBounds.width - ratio * 8 - width, tabBounds.y + tabBounds.height - ratio * 24, ratio * 16, WHITE);
+        const int width = MeasureText(name, windowRatio * 16);
+        DrawText(name, tabBounds.x + tabBounds.width - windowRatio * 8 - width, tabBounds.y + tabBounds.height - windowRatio * 24, windowRatio * 16, WHITE);
     }
     void _updateBuildTab() {
         if(tabs[activeTab].hover != -1 && IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
@@ -121,11 +121,16 @@ namespace GUI {
             .update = &_updateBuildTab,
             .render = &_renderBuildTab
         };
-        tabs[ACTION_TAB_LOGIC] = {
-            .button = LoadTexture("resources/ui/logic_tab.png")
+        tabs[ACTION_TAB_DIGGING] = {
+            .button = LoadTexture("resources/ui/digging_tab.png"),
+            .highlight = (Color){255, 40, 40, 50},
+            .border = (Color){255, 40, 40, 100}
+            
         };
-        tabs[ACTION_TAB_POWER] = {
-            .button = LoadTexture("resources/ui/power_tab.png")
+        tabs[ACTION_TAB_GAS] = {
+            .button = LoadTexture("resources/ui/gas_tab.png"),
+            .highlight = (Color){200, 200, 200, 50},
+            .border = (Color){200, 200, 200, 100}
         };
         tabs[ACTION_TAB_TRANSPORTATION] = {
             .button = LoadTexture("resources/ui/transportation_tab.png")
@@ -144,7 +149,69 @@ namespace GUI {
     // Render all GUI elements
     void Render() {
         // Calculate absolute texture size
-        const float textureSize = ratio * (float)tabs[0].button.width;
+        const float textureSize = windowRatio * (float)tabs[0].button.width;
+
+        Tile hovered = player->world->Get(mouseWorldPos);
+        float line = 1;
+        DrawText(tilePrefabs[hovered.sprite.index].name, mouse.x + 16, mouse.y, 8, WHITE);
+        if(hovered.sprite.gas != GAS_SOLID) {
+            DrawText((string(gasNames[hovered.sprite.gas]) + "  " + to_string(int(hovered.data[TILEDATA_GAS_MASS])) + " G").c_str(), mouse.x + 16, mouse.y + (line*10), 8, WHITE);
+            ++line;
+        }
+        if(hovered.data.entryExists(TILEDATA_INTERNAL_MASS)) {
+            DrawText(
+                (to_string(int(hovered.data[TILEDATA_INTERNAL_MASS])) + " G of " +
+                string(gasNames[int(hovered.data[TILEDATA_INTERNAL_ELEMENT])])).c_str(), 
+                mouse.x + 16, mouse.y + (line*10), 8, WHITE
+            );
+            ++line;
+        }
+        if(tilePrefabs[hovered.sprite.index].interactable){
+            DrawText("[E]", mouse.x + 16, mouse.y + (line*10), 8, WHITE);
+            ++line;
+        }
+
+        // Get source rectangle for drawing
+        const Rectangle source = {
+            0, 0,
+            (float)tabs[0].button.width, (float)tabs[0].button.height
+        };
+        
+        // Render all the buttons
+        for(int i = 1; i < actions + 1; ++i) {
+            // Get real index
+            const int index = actions - i;
+
+            // Calculate button bounds
+            const Rectangle bounds = {
+              window.x - windowRatio - (i * textureSize * 1.2f), window.y - textureSize * 1.2f,
+              textureSize, textureSize
+            };
+
+            // Get button alpha
+            const u8 alpha = (CheckCollisionPointRec(GetMousePosition(), bounds) ? 230 : 180);
+            const u8 shade = index == activeTab ? 255 : 200;
+            
+            DrawTexturePro(tabs[index].button, source, bounds, {0, 0}, 0, (Color){shade, shade, shade, alpha});
+        }
+ 
+        // Reset highlight and border color
+        highlight = BLANK;
+        border = BLANK;
+
+        // Early return if no tab selected
+        if(activeTab == -1) return;
+
+        // Draw bg
+        tabBounds = {window.x - windowRatio - (actions * textureSize * 1.2f), window.y - textureSize * 11, ((actions-1) * textureSize * 1.2f) + textureSize, textureSize * 9.5f};
+        DrawTextureFast(tabBackground, tabBounds, WHITE);
+
+        // Render selected tab
+        if(tabs[activeTab].render != nullptr) tabs[activeTab].render();
+
+        // Set highlight and border color
+        highlight = tabs[activeTab].highlight;
+        border = tabs[activeTab].border;
 
         // Draw tile highlight
         DrawRectangle(
@@ -166,59 +233,12 @@ namespace GUI {
             (selection.position.y - player->position.y) * scale + (window.y / 2), 
             selection.size.x * scale, selection.size.y * scale}, scale / 16.0f, border
         );
-
-        Tile hovered = player->world->get(mouseWorldPos);
-        DrawText(tilePrefabs[hovered.sprite.index].name, mouse.x + 16, mouse.y, 8, WHITE);
-        if(hovered.sprite.gas != GAS_SOLID) {
-            DrawText((string(gasNames[hovered.sprite.gas]) + "  " + to_string(int(hovered.data[TILEDATA_GAS_MASS])) + " G").c_str(), mouse.x + 16, mouse.y + 10, 8, WHITE);
-        }
-
-        // Get source rectangle for drawing
-        const Rectangle source = {
-            0, 0,
-            (float)tabs[0].button.width, (float)tabs[0].button.height
-        };
-        
-        // Render all the buttons
-        for(int i = 1; i < actions + 1; ++i) {
-            // Get real index
-            const int index = actions - i;
-
-            // Calculate button bounds
-            const Rectangle bounds = {
-              window.x - ratio - (i * textureSize * 1.2f), window.y - textureSize * 1.2f,
-              textureSize, textureSize
-            };
-
-            // Get button alpha
-            const u8 alpha = (CheckCollisionPointRec(GetMousePosition(), bounds) ? 230 : 180);
-            const u8 shade = index == activeTab ? 255 : 200;
-            
-            DrawTexturePro(tabs[index].button, source, bounds, {0, 0}, 0, (Color){shade, shade, shade, alpha});
-        }
- 
-        // Reset highlight and border color
-        highlight = BLANK;
-        border = BLANK;
-
-        // Early return if no tab selected
-        if(activeTab == -1) return;
-
-        // Draw bg
-        tabBounds = {window.x - ratio - (actions * textureSize * 1.2f), window.y - textureSize * 11, ((actions-1) * textureSize * 1.2f) + textureSize, textureSize * 9.5f};
-        DrawTextureFast(tabBackground, tabBounds, WHITE);
-
-        // Render selected tab
-        if(tabs[activeTab].render != nullptr) tabs[activeTab].render();
-
-        // Set highlight and border color
-        highlight = tabs[activeTab].highlight;
-        border = tabs[activeTab].border;
     }
     
     void Update() {
         // Update active tab
         if(activeTab != -1 && tabs[activeTab].update != nullptr) tabs[activeTab].update();
+        if(IsKeyPressed(KEY_ESCAPE)) activeTab = -1;
 
         // Ignore other mouse actions if tab is hovered
         if(CheckCollisionPointRec(mouse, tabBounds)) {
@@ -227,7 +247,7 @@ namespace GUI {
         }
 
         // Calculate absolute texture size
-        const float textureSize = ratio * (float)tabs[0].button.width;
+        const float textureSize = windowRatio * (float)tabs[0].button.width;
 
         // Right click action
         if(IsMouseButtonPressed(MOUSE_BUTTON_RIGHT)) {
@@ -244,12 +264,9 @@ namespace GUI {
                     // Paste structure into world
                     for(int x = 0; x < s.width; ++x) {
                         for(int y = 0; y < s.height; ++y) {
-                            player->world->set(x + mouseWorldPos.x, y + mouseWorldPos.y, s.get(x, y).Deserialize());
+                            player->world->Set(x + mouseWorldPos.x, y + mouseWorldPos.y, s.get(x, y).Deserialize());
                         }
                     }
-
-                    // Update world
-                    player->world->update();
 
                     // Unload
                     s.Unload();
@@ -285,7 +302,7 @@ namespace GUI {
 
                 // Calculate button bounds
                 const Rectangle bounds = {
-                    window.x - ratio - (i * textureSize * 1.2f), window.y - textureSize * 1.2f,
+                    window.x - windowRatio - (i * textureSize * 1.2f), window.y - textureSize * 1.2f,
                     textureSize, textureSize
                 };
 
@@ -312,7 +329,7 @@ namespace GUI {
                     // Copy structure tiles
                     for(int x = selection.position.x; x < selection.position.x + selection.size.x; ++x) {
                         for(int y = selection.position.y; y < selection.position.y + selection.size.y; ++y) {
-                            s.set(x - selection.position.x, y - selection.position.y, player->world->get(x, y));
+                            s.set(x - selection.position.x, y - selection.position.y, player->world->Get(x, y));
                         }
                     }
 
@@ -335,10 +352,32 @@ namespace GUI {
                     // Fill in selection
                     for(int x = selection.position.x; x < selection.position.x + selection.size.x; ++x) {
                         for(int y = selection.position.y; y < selection.position.y + selection.size.y; ++y) {
-                            player->world->set(x, y, DefaultTile((TileType)player->heldTile));
+                            Tile t = DefaultTile((TileType)player->heldTile);
+                            t.sprite.rotation = player->heldRotation;
+                            player->world->Set(x, y, t);
                         }
                     }
-                    player->world->update();
+                    break;
+                }
+                case ACTION_TAB_GAS:
+                {
+                    // Fill in selection
+                    for(int x = selection.position.x; x < selection.position.x + selection.size.x; ++x) {
+                        for(int y = selection.position.y; y < selection.position.y + selection.size.y; ++y) {
+                            Tile t = DefaultTile(TILE_EMPTY, GAS_CARBON_DIOXIDE);
+                            player->world->Set(x, y, t);
+                        }
+                    }
+                    break;
+                }
+                case ACTION_TAB_DIGGING:
+                {
+                    // Add selection to player dig queue
+                    for(int x = selection.position.x; x < selection.position.x + selection.size.x; ++x) {
+                        for(int y = selection.position.y; y < selection.position.y + selection.size.y; ++y) {
+                            if(player->world->Get(x,y).sprite.index != TILE_EMPTY) player->digQueue.push_back(Vec2<int>{x,y});
+                        }
+                    }
                     break;
                 }
                 default:

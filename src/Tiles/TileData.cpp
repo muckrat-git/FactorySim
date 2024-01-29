@@ -3,7 +3,9 @@
 #include "Other/Types.cpp"
 
 enum TileDataEntries {
-    TILEDATA_GAS_MASS
+    TILEDATA_GAS_MASS,
+    TILEDATA_INTERNAL_MASS,
+    TILEDATA_INTERNAL_ELEMENT
 };
 
 // TileData contains all other tile information not exposed by TileSprite (not required by the GPU)
@@ -17,6 +19,7 @@ class TileData {
     float invalid;  // lvalue returned when an invalid entry is requested
 
     public:
+    bool lock = false;
     _Entry * data;  // Internal structure used for map style indexing 
     u8 size;        // Quantity of data entries
     
@@ -26,6 +29,15 @@ class TileData {
     TileData(u8 size) {
         this->size = size;
         this->data = new _Entry[size];
+    }
+
+    // Clone tile data
+    TileData Clone() {
+        TileData ret = TileData(size);
+        for(int i = 0; i < size; ++i) {
+            ret.overwrite(i, data[i].index, data[i].value);
+        }
+        return ret;
     }
 
     void Unload() {

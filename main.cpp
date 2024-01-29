@@ -20,19 +20,48 @@ int main() {
     Player player;
     world = World(0);
     player.world = &world;
-    player.position = {WORLD_SIZE / 2, WORLD_SIZE / 2};
+    player.position = {WORLD_SIZE / 2 + 0.1, WORLD_SIZE / 2 + 0.1};
 
     // Init renderer and gui
     Renderer::Init(&player, "src/Shaders/vert.glsl", "src/Shaders/frag.glsl");
     GUI::Load();
 
+    // Load structure
+    int size;
+    u8 * bytes = LoadFileData("debug.sav", &size);
+    Structure s;
+    s.Deserialize(bytes);
+    free(bytes);
+
+    // Paste structure into world
+    for(int x = 0; x < s.width; ++x) {
+        for(int y = 0; y < s.height; ++y) {
+            player.world->Set(x + WORLD_SIZE / 2 - 20, y + WORLD_SIZE / 2 - 14, s.get(x, y).Deserialize());
+        }
+    }
+
+    // Unload
+    s.Unload();
+
+    world.Update();
+
+    world.StartUpdater();
+
+    SetExitKey(0);
+
+    float avg = 300;
+
     while(!WindowShouldClose()) {
+        const float deltaT = GetFrameTime();
+
         // Render everything
         Renderer::Render();
 
         // Perform updates
-        player.Update(GetFrameTime());
+        player.Update(deltaT);
         GUI::Update();
+
+        player.world->CheckUpdater(deltaT);
     }
 
     world.Unload();

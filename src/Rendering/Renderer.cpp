@@ -48,7 +48,7 @@ void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint, bool flipY = fa
 namespace Renderer {
     float viewSize = 70;        // The size of the player viewport in tiles
     float scale;                // Camera-Tile scale (pixels per tile)
-    float ratio;                // Ratio of window.x to window.y
+    float windowRatio;          // Ratio of window.x to window.y
     Vec2<float> window;         // Window width and height
     Vec2<float> mouse;          // Mouse position
     Vec2<int> mouseWorldPos;    // World space mouse position
@@ -65,8 +65,12 @@ namespace Renderer {
 
     // Player pointer
     Player * player;
-    Texture2D edgeMaskTex;
     RenderTexture2D renderBuffer;
+    
+    // Texture sheets
+    Texture2D edgeMaskTex;
+    Texture2D breakSheetTex;
+    Texture2D breakMark;
 
     void UpdateWindow(bool first = false) {
         // Get window bounds
@@ -88,7 +92,6 @@ namespace Renderer {
         char * vertexShaderCode = LoadFileText(vertex);
         char * baseFragCode = LoadFileText(fragment);
         char * fragmentShaderCode = TextReplace(baseFragCode, "#tiledefs", genShaderFunctions().c_str());
-        cout << genShaderFunctions();
         shader = LoadShaderFromMemory(vertexShaderCode, fragmentShaderCode);
         free(vertexShaderCode);
         free(fragmentShaderCode);
@@ -106,7 +109,11 @@ namespace Renderer {
         SetShaderValue(shader, GetShaderLocation(shader, "gasCount"), &gasCount, SHADER_UNIFORM_INT);
 
         UpdateWindow(true);
+
+        // Load texture masks
         edgeMaskTex = LoadTexture("resources/mask/case-sheet.png");
+        breakSheetTex = LoadTexture("resources/ui/break-sheet.png");
+        breakMark = LoadTexture("resources/ui/break-mark.png");
     }
 
     // Prototype RenderGUI
@@ -121,7 +128,7 @@ namespace Renderer {
         // Calculate screen bounds
         viewSize = player->zoom;
         scale = window.x / viewSize;
-        ratio = window.x / window.y;
+        windowRatio = window.x / window.y;
 
         // Update mouse pos
         mouse.x = GetMouseX();
@@ -133,9 +140,9 @@ namespace Renderer {
         BeginShaderMode(shader);
         {
             SetShaderValue(shader, shaderScaleLoc, &viewSize, SHADER_UNIFORM_FLOAT);
-            SetShaderValue(shader, shaderWindowRLoc, &ratio, SHADER_UNIFORM_FLOAT);
+            SetShaderValue(shader, shaderWindowRLoc, &windowRatio, SHADER_UNIFORM_FLOAT);
             SetShaderValue(shader, shaderPlayerLoc, &player->position, SHADER_UNIFORM_VEC2);
-            SetShaderValueTexture(shader, shaderWorldLoc, player->world->getTexture());
+            SetShaderValueTexture(shader, shaderWorldLoc, player->world->GetTexture());
             SetShaderValueTexture(shader, shaderEdgeMaskLoc, edgeMaskTex);
             SetShaderValueTexture(shader, shaderTexmapLoc, textureMap);
             SetShaderValueTexture(shader, shaderGasmapLoc, gasMap);
@@ -145,11 +152,36 @@ namespace Renderer {
         }
         EndShaderMode();
 
+        // Calculate world space mouse position
+        mouseWorldPos = ((GetRelative(mouse) * viewSize / vec2(2, windowRatio * 2)) + player->position).Int();
+
+        // Update world interaction data
+        player->world->hoverTile = mouseWorldPos;
+        
         // Render user interface
         RenderGUI();
-        
-        // Calculate world space mouse position
-        mouseWorldPos = ((GetRelative(mouse) * viewSize / vec2(2, ratio * 2)) + player->position).Int();
+
+        // Get current player dig tile (avoid address boundry error)
+        Vec2<int> currentDig = ivec2(-1,-1);
+        if(player->digProgress != 0 && player->digQueueIndex >= 0 && player->digQueueIndex < player->digQueue.size()) 
+            currentDig = player->digQueue[player->digQueueIndex];
+
+        // Visualize player dig queue
+        for(Vec2<int> tile : player->digQueue) {
+            // Calculate dest rect
+            Rectangle dest = {
+                (tile.x - player->position.x) * (scale) + (window.x / 2), 
+                (tile.y - player->position.y) * (scale) + (window.y / 2), 
+                ceilf(scale), ceilf(scale)
+            };
+
+            if(tile == currentDig) {
+                // Draw break animation
+                DrawTexturePro(breakSheetTex, {floorf(player->digProgress * 29 / DIG_TIME) * 8, 0, 8, 8}, dest, {0}, 0, WHITE);
+                //continue;
+            }
+            DrawTexturePro(breakMark, {0, 0, 16, 16}, dest, {0}, 0, (Color){255, 255, 255, 70});
+        }
 
         EndTextureMode();
         

@@ -4,7 +4,6 @@
 
 #include "Other/Types.cpp"
 #include "Tiles/TileData.cpp"
-#include "Tiles/TileTypes.cpp"
 
 using namespace std;
 
@@ -13,6 +12,7 @@ struct TileSprite {
     u8 index;       // Index used to detirmine tile properties and appearance
     u8 gas = 0;     // Index of the gas that is over the tile
     u8 alpha = 0;   // The opacity of the gas coverage
+    u8 rotation = 0;// The rotation index of the tile
 };
 
 struct Tile {
@@ -20,11 +20,28 @@ struct Tile {
     TileData data;
 };
 
+#include "Tiles/TileTypes.cpp"
+
 TileData InitialTileData(TileType primary, GasType gas, float gasMass) {
     // Temporary dynamic map to be transfered to fixed size TileData object
     map<u8, float> dataMap;
 
     if(gas != GAS_SOLID) dataMap.insert({TILEDATA_GAS_MASS, gasMass});
+    
+    switch(primary) {
+        case TILE_PIPE:
+        case TILE_PIPE_L:
+        case TILE_PIPE_T:
+        case TILE_PIPE_PLUS:
+        case TILE_WALL_PIPE:
+        case TILE_WALL_VENT:
+        case TILE_PIPE_PUMP:
+            dataMap.insert({TILEDATA_INTERNAL_MASS, 0});
+            dataMap.insert({TILEDATA_INTERNAL_ELEMENT, 0});
+            break;
+        default:
+            break;
+    }
 
     // Move map data into tile data
     TileData tileData = TileData(dataMap.size());
@@ -36,6 +53,12 @@ TileData InitialTileData(TileType primary, GasType gas, float gasMass) {
     return tileData;
 }
 
+// Get a random rotation index based on a limit
+u8 GetRandomRotation(u8 limit) {
+    if(limit == 0) return 0;
+    return (rand() % (limit*2)) * (3 - limit);
+}
+
 // Generates a full Tile from a basic tile types
 Tile DefaultTile(TileType primary, GasType gas, float gasMass) {
     return Tile{
@@ -43,6 +66,7 @@ Tile DefaultTile(TileType primary, GasType gas, float gasMass) {
             (u8)primary,
             (u8)gas,
             getGasAlpha(gasMass, gas),
+            GetRandomRotation(tilePrefabs[primary].rotation)
         },
         .data = InitialTileData(primary, gas, gasMass)
     };
@@ -52,7 +76,6 @@ Tile DefaultTile(TileType primary, GasType gas, float gasMass) {
 Tile DefaultTile(TileType primary, GasType gas) {
     return DefaultTile(primary, gas, defaultGasMass[gas]);
 }
-
 
 // Generates a full Tile from a basic tile types (default gas)
 Tile DefaultTile(TileType primary) {

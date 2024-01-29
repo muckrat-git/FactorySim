@@ -46,3 +46,7 @@ float Quantize(float value, float count, float min, float max) {
     float normal = Normalize(value, min, max);
     return roundf(normal * count) * max / count + min;
 }
+
+Vec2<float> RotationVector(float rotation) {
+    return Vec2<float>{cosf(rotation), sinf(rotation)};
+}

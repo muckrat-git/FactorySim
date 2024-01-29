@@ -11,36 +11,6 @@ int gasCount = 0;
 Texture2D gasMap;
 Texture2D textureMap;
 
-enum GasType {
-    GAS_EMPTY,
-    GAS_SOLID,
-    GAS_OXYGEN
-};
-
-const float defaultGasMass[] = {
-    0,
-    0,
-    2000
-};
-
-cstr gasNames[] = {
-    "Void",
-    "Void",
-    "Oxygen"
-};
-
-GasType getDefaultGas(int id) {
-    return tilePrefabs[id].solid ? GAS_SOLID : GAS_OXYGEN;
-}
-
-u8 getGasAlpha(float mass, GasType gas) {
-    float d = defaultGasMass[gas];
-    if(d == 0) return 0;
-    d = Normalize(mass, 0, d);
-    d = Clamp(d, 0, 1);
-    return (u8)(d * 255);
-}
-
 // Generate constant functions for tile information on the shader
 string genShaderFunctions() {
     // Generate 'IsTransparent'
@@ -59,11 +29,23 @@ string genShaderFunctions() {
     }
     out += "); return lookup[index];}\n";
 
+    // Generate 'IsSmall'
+    out += "bool IsSmall(int index) {bool lookup[] = bool[" + to_string(tileCount) + "](";
+    for(int i = 0; i < tileCount; ++i) {
+        out += tilePrefabs[i].small ? "true" : "false";
+        if(i != tileCount - 1) out += ",";
+    }
+    out += "); return lookup[index];}\n";
+
     // Generate shorthands
     out += "bool transparent(vec2 pos) {return IsTransparent(int(texture(world, pos / WORLDSIZE).x * 255 + 0.5));}\n";
     out += "bool transparent(float x, float y) {return transparent(vec2(x, y));}\n";
     out += "bool solid(vec2 pos) {return IsSolid(int(texture(world, pos / WORLDSIZE).x * 255 + 0.5));}\n";
     out += "bool solid(float x, float y) {return solid(vec2(x, y));}\n";
+    out += "bool small(vec2 pos) {return IsSmall(int(texture(world, pos / WORLDSIZE).x * 255 + 0.5));}\n";
+    out += "bool small(float x, float y) {return small(vec2(x, y));}\n";
+    out += "bool isair(vec2 pos) {return (int(texture(world, pos / WORLDSIZE).x * 255 + 0.5)) == 0;}\n";
+    out += "bool isair(float x, float y) {return isair(vec2(x, y));}\n";
     return out;
 }
 
@@ -88,12 +70,13 @@ void LoadTexmap() {
     UnloadImage(imgmap);
 
     // Generate gas map
-    gasCount = 3;
+    gasCount = 4;
     imgmap = GenImageColor(gasCount, 1, BLANK);
     
     ImageDrawPixel(&imgmap, 0, 0, BLANK);
-    ImageDrawPixel(&imgmap, 0, 0, BLANK);
-    ImageDrawPixel(&imgmap, 1, 0, (Color){193, 247, 255, 255});
+    ImageDrawPixel(&imgmap, 1, 0, BLANK);
+    ImageDrawPixel(&imgmap, 2, 0, (Color){193, 247, 255, 255});
+    ImageDrawPixel(&imgmap, 3, 0, (Color){35, 35, 35, 255});
 
     gasMap = LoadTextureFromImage(imgmap);
     UnloadImage(imgmap);
