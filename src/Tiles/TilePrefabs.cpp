@@ -138,7 +138,16 @@ const TilePrefab tilePrefabs[] = {
     PREFAB(PipeTile(3, false)),
     PREFAB(PipeTile(0, true)),
     PREFAB(WallVent()),
-    PREFAB(PipePump())
+    PREFAB(PipePump()),
+    {
+        .name = "Tube",
+        .texture = "resources/tiles/tubes/tube.png",
+
+        .transparent = true,
+        .solid = false,
+        .small = true,
+        .rotation = 2
+    }
 };
 
 // Check if a tile at a position is air

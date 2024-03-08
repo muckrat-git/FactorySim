@@ -138,9 +138,9 @@ void main() {
     else {
         // Apply edge shading on air tiles
         const float step = 8;                   // Step is how many pixels to check
-        const float angles = 8;                 // How many angles to check
+        const float angles = 4;                 // How many angles to check
         const float stepCount = step * angles;  // The total steps taken
-        const float opacity = 1;                // Final opacity of the shading
+        const float opacity = 0.8;              // Final opacity of the shading
 
         float coverage = 0; // Total surrounding pixels that are solid
 

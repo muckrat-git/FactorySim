@@ -119,6 +119,9 @@ namespace Renderer {
     // Prototype RenderGUI
     void RenderGUI();
 
+    // Prototype RenderEntities
+    void RenderEntities();
+
     // Returns vec2 from -1 to 1 of the position relative to the window
     Vec2<float> GetRelative(Vec2<float> position) {
         return position * 2 / window - vec2(1);
