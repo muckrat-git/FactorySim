@@ -6,6 +6,7 @@
 #include "Tiles/Tile.cpp"
 
 #define TILESIZE 16
+#define RENDERSCALE 0.5f
 
 void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint, bool flipY = false) {
         float width = (float)tex1.width;
@@ -79,7 +80,7 @@ namespace Renderer {
 
         if(!first)
             UnloadRenderTexture(renderBuffer);
-        renderBuffer = LoadRenderTexture(window.x, window.y);
+        renderBuffer = LoadRenderTexture(window.x * RENDERSCALE, window.y * RENDERSCALE);
 
         window.x = renderBuffer.texture.width;
         window.y = renderBuffer.texture.height;
@@ -134,8 +135,8 @@ namespace Renderer {
         windowRatio = window.x / window.y;
 
         // Update mouse pos
-        mouse.x = GetMouseX();
-        mouse.y = GetMouseY();
+        mouse.x = GetMouseX() * RENDERSCALE;
+        mouse.y = GetMouseY() * RENDERSCALE;
 
         if(IsWindowResized()) UpdateWindow();
 

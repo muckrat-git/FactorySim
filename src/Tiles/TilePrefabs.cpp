@@ -50,7 +50,8 @@ enum TileType {
     TILE_PIPE_PLUS,
     TILE_WALL_PIPE,
     TILE_WALL_VENT,
-    TILE_PIPE_PUMP
+    TILE_PIPE_PUMP,
+    TILE_ITEM_TUBE
 };
 
 // Prototype tile functions
@@ -141,8 +142,31 @@ const TilePrefab tilePrefabs[] = {
     PREFAB(PipePump()),
     {
         .name = "Tube",
-        .texture = "resources/tiles/tubes/tube.png",
-
+        .texture = "resources/tiles/tubes/tube1.png",
+        .transparent = true,
+        .solid = false,
+        .small = true,
+        .rotation = 2
+    },
+    {
+        .name = "Tube",
+        .texture = "resources/tiles/tubes/tube2.png",
+        .transparent = true,
+        .solid = false,
+        .small = true,
+        .rotation = 2
+    },
+    {
+        .name = "Tube",
+        .texture = "resources/tiles/tubes/tube3.png",
+        .transparent = true,
+        .solid = false,
+        .small = true,
+        .rotation = 2
+    },
+    {
+        .name = "Tube",
+        .texture = "resources/tiles/tubes/tube4.png",
         .transparent = true,
         .solid = false,
         .small = true,
