@@ -170,7 +170,7 @@ void main() {
     color = mix(color, vec4(midLayer.rgb, 1), (1-mask.r) * midLayer.a * fragColor.a);
     
     // Get and mix gas tint
-    vec4 gasTint = texture(gasTextureMap, vec2(worldData.g / gasCount, 1));
+    vec4 gasTint = texture(gasTextureMap, vec2((worldData.g + 0.6) / gasCount, 1));
     color = mix(color, vec4(gasTint.rgb, 1), (1-mask.r) * 0.3 * worldData.b); 
     
     // Get and apply lighting
