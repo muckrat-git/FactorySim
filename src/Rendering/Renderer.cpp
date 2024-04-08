@@ -6,7 +6,7 @@
 #include "Tiles/Tile.cpp"
 
 #define TILESIZE 16
-#define RENDERSCALE 0.5f
+#define RENDERSCALE 1.0f
 
 void DrawTextureFast(Texture2D tex1, Rectangle dest, Color tint, bool flipY = false) {
         float width = (float)tex1.width;
